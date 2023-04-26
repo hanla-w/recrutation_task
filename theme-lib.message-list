@@ -6,14 +6,16 @@
 <#assign showPaging = "true" />
 <#assign sorting = http.request.parameters.name.get("sort", "") />
  
+ <#--  Setting fixed size of the page  -->
 <#-- page size -->
-<#assign pageSize = coreNode.settings.name.get("layout.messages_per_page_linear", "10")?number />
-<#if user.registered>
-   <#assign pageSizeUser = settings.name.get("layout.messages_per_page_linear") />
+<#assign pageSize = 30 />
+<#--  Since page size is fixed this condition is redundant  -->
+<#--  <#if user.registered>
+   <#assign pageSizeUser = 30 />
    <#if pageSizeUser?number != pageSize?number>
        <#assign pageSize = pageSizeUser />
    </#if>
-</#if>
+</#if>  -->
  
 <#if webuisupport.path.parameters.name.get("label-name")??>
    <#assign label = webuisupport.path.parameters.name.get("label-name").getText() />
@@ -38,11 +40,27 @@
    <#case "kudos">
        <#assign orderClause = "ORDER BY kudos.sum(weight) DESC " />
    <#break>
+   <#--  Adding sorting method - from lowest kudos  -->
+   <#case "lowest-kudos">
+       <#assign orderClause = "ORDER BY kudos.sum(weight) ASC " />
+   <#break>
    <#case "views">
        <#assign orderClause = "ORDER BY metrics.views DESC " />
    <#break>
    <#case "replies">
        <#assign orderClause = "ORDER BY replies.count(*) DESC " />
+   <#break>
+   <#--  Adding sorting method - from no replies  -->
+    <#case "no-replies">
+       <#assign orderClause = "ORDER BY replies.count(*) ASC " />
+   <#break>
+   <#--  Adding sorting method - from unsolved questions  -->
+   <#case "no-solution">
+       <#assign orderClause = "ORDER BY conversation.solved " />
+   <#break>
+   <#--  Adding sorting method - from latest post  -->
+   <#case "latest">
+       <#assign orderClause = "ORDER BY post_time DESC " />
    <#break>
    <#default>
        <#assign orderClause = "ORDER BY conversation.last_post_time DESC " />
@@ -76,6 +94,11 @@
                    <option value="views" <#if sorting == 'views'>selected</#if>>${text.format("theme-lib.community-activity.views")}</option>
                    <option value="replies" <#if sorting == 'replies'>selected</#if>>${text.format("theme-lib.community-activity.replies")}</option>
                    <option value="kudos" <#if sorting == 'kudos'>selected</#if>>${text.format("theme-lib.community-activity.kudos")}</option>
+                   <#--  Adding option for dropdown; text unchanged because out of scope  -->
+                    <option value="lowest-kudos" <#if sorting == 'lowest-kudos'>selected</#if>>${text.format("theme-lib.community-activity.kudos")}</option>
+                    <option value="no-replies" <#if sorting == 'no-replies'>selected</#if>>${text.format("theme-lib.community-activity.kudos")}</option>
+                    <option value="no-solution" <#if sorting == 'no-solution'>selected</#if>>${text.format("theme-lib.community-activity.kudos")}</option>
+                    <option value="latest" <#if sorting == 'latest'>selected</#if>>${text.format("theme-lib.community-activity.kudos")}</option>
                </select>
                <#if page.interactionStyle=="idea">
                  <@component id="custom.idea.status.label" />
@@ -148,9 +171,10 @@
        <#assign msg_status_icon = "custom-thread-floated" />
        <#assign msg_status_txt = "theme-lib.general.thread-floated" />
    </#if>
+   <#--  Renaming the class for solved threads to case-closed  -->
    <#if msg.conversation.solved>
-       <#assign solved = "custom-thread-solved" />
-       <#assign msg_status_icon = "custom-thread-solved" />
+       <#assign solved = "case-closed" />
+       <#assign msg_status_icon = "case-closed" />
        <#assign msg_status_txt = "theme-lib.general.thread-solved" />
    </#if>
    <#if !msg.user_context.read>
